@@ -71,7 +71,18 @@ app.post("/urls", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
+app.post("/urls/:id/:action", (req, res) => {
+  const id = req.params.id;
+  const formAction = req.params.action;
+  switch(formAction) {
+    case "delete":
+      delete urlDatabase[id];
+      break;
+    case "update":
+      urlDatabase[id] = getValidURLFormat(req.body.longURL);
+      break;
+    default:
+      break;
+  }
   res.redirect("/urls");
 });
