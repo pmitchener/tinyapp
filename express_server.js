@@ -6,6 +6,23 @@ const PORT = 8080; // default port 8080
 const generateRandomString = () => {
   return Math.random().toString(36).substring(2, 8);
 };
+/*
+  This function will make sure that any long url being posted or redirected to is actually a valid url format.
+  //if the string does not start with http, the function will assume mal format and pre-pend http:// to the string
+  i.e www.msn.com will be changed to http://www.msn.com
+  https://yoursecure.com will not be changed.
+*/
+const getValidURLFormat = (url) => {
+  //If url is undefined or empty string, just return the url. This should not happen.
+  //The calling method should have already check for this.
+  if (!url) {
+    url;
+  }
+  if (!url.toLowerCase().startsWith("http")) {
+    return `http://${url}`;
+  }
+  return url;
+};
 app.use(bodyParser.urlencoded({extended:true}));
 app.set("view engine", "ejs");
 
@@ -26,22 +43,30 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 app.get("/urls/:shortURL", (req, res) => {
-  if (!urlDatabase[req.params.shortURL]) {
+  const longURL = urlDatabase[req.params.shortURL];
+  if (!longURL) {
     res.render("urlNotFound", {url:req.params.shortURL});
-  } else {
-    let templateVars = {longURL:urlDatabase[req.params.shortURL], shortURL:req.params.shortURL};
+  } else {  
+    let templateVars = {longURL:longURL, shortURL:req.params.shortURL};
     res.render("urls_show", templateVars);
   }
 });
-
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  if (!longURL) {
+    res.render("urlNotFound", {url:req.params.shortURL});
+  } else {   
+    res.redirect(getValidURLFormat(longURL));
+  }
+});
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.post("/urls", (req, res) => {
-  urlDatabase[generateRandomString()] = req.body.longURL
-  res.send("OK");
-  console.log(urlDatabase);
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = getValidURLFormat(req.body.longURL);
+  res.redirect(`/urls/${shortURL}`);
 });
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
