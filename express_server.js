@@ -39,8 +39,9 @@ app.get("/hello", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
+  urlDatabase[generateRandomString()] = req.body.longURL
   res.send("OK");
+  console.log(urlDatabase);
 });
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
