@@ -22,14 +22,18 @@
           </form>
         </div>      
       <% } else { %>
-      <div class="navbar-nav">
+        <div>
+          <a style="font-size:20px;color:#fff;text-decoration:none;margin-right:20px;" href="/login">Login</a> 
+          <a style="font-size:20px;color:#fff;text-decoration:none;margin-right:20px;" href="/register">Register</a>
+        </div> 
+      <!--<div class="navbar-nav">
         <form method="POST" action="/login">
           <div>
             <input type="text" name="username" placeholder="Username" style="font-size:20px;width:300px;padding-left:10px;padding-right:20px;border:1px solid #000;border-radius:5px;height:40px;"> 
             <button type="submit" style="font-size:20px;color:#fff;background-color:inherit;width:100px;border:1px solid #000;border-radius:5px;height:40px;">Login</button>
           </div>
         </form>
-      </div>
+      </div> -->
       <% } %>
     </div>    
     <!-- End of User Logon section -->

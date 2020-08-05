@@ -180,7 +180,8 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie("user_id", userDatabase.getUserId(req.body.username));
+  console.log(req.body.email, userDatabase.getUserId(req.body.email))
+  res.cookie("user_id", userDatabase.getUserId(req.body.email));
   res.redirect("/urls");
 });
 app.post("/logout", (req, res) => {
