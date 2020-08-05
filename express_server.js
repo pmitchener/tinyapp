@@ -33,17 +33,38 @@ const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+const users = {
+  "Uer22": {
+    id: "User22",
+    email: "dave22@rogers.com",
+    password: "004QAD"
+  }
+};
+
+
+const addUser = (email, password) => {
+  const id = generateRandomString();
+  users[id] = {
+    id,
+    email,
+    password
+  };
+  return id;
+};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
 app.get("/register", (req, res) => {
-  let templateVars = {username:''};
+  let templateVars = {
+    username:'', 
+    bad_register:''
+  };
   res.render("user_register", templateVars);
 });
 app.get("/urls", (req, res) => {
-  let username = req.cookies["username"];
+  let username = users[req.cookies.user_id].email;
   let templateVars = {
     urls:urlDatabase,
     username
@@ -52,7 +73,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let username = req.cookies["username"];
+  let username = users[req.cookies.user_id].email;
   let templateVars = {
     username
   };  
@@ -61,7 +82,7 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = req.cookies["username"];
+  let username = users[req.cookies.user_id].email;
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -80,7 +101,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = req.cookies["username"];
+  let username = users[req.cookies.user_id].email;
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -94,6 +115,22 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!email || !password) {
+    let templateVars = {
+      username:'',
+      bad_register: "Email and password are required."
+    };
+    res.render("user_register", templateVars);    
+  } else {
+    const user_id = addUser(email, password);
+    res.cookie("user_id", user_id);
+    res.redirect("/urls")
+  }
 });
 
 app.post("/login", (req, res) => {
