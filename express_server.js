@@ -79,7 +79,25 @@ const userDatabase = {
       }
     }
     return '';
-  }
+  },
+  getUser: (email) => {
+    for (const key in users) {
+      if (users[key].email === username) {
+        return users[key];
+      }
+    }
+    return null;
+  },
+  authenticateUser: (email, password) => {
+    const userObj = getUser(email);
+    if (!userObj) {
+      return '';
+    }
+    if (userObj.password !== password) {
+      return '';
+    }
+    return userObj.id;
+  } 
 };
 
 app.get("/", (req, res) => {
@@ -180,9 +198,18 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  console.log(req.body.email, userDatabase.getUserId(req.body.email))
-  res.cookie("user_id", userDatabase.getUserId(req.body.email));
-  res.redirect("/urls");
+  const user_id = userDatabase.authenticateUser(req.body.email, req.body.password);
+  if (user_id) {
+    let templateVars = {
+      username:'', 
+      bad_login:'Invalid user id and or password.'
+    };
+    res.statusCode = 400;
+    res.render("user_login", templateVars);      
+  } else {
+    res.cookie("user_id", user_id);
+    res.redirect("/urls");
+  }
 });
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
