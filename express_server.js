@@ -1,6 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+
 const app = express();
+app.use(cookieParser());
 const PORT = 8080; // default port 8080
 
 const generateRandomString = () => {
@@ -36,23 +39,25 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let username = (req.cookies) ? req.cookies["username"] : "";
+  let username = req.cookies["username"];
   let templateVars = {
     urls:urlDatabase,
     username
   };
   res.render("urls_index", templateVars);
 });
+
 app.get("/urls/new", (req, res) => {
-  let username = (req.cookies) ? req.cookies["username"] : "";
+  let username = req.cookies["username"];
   let templateVars = {
     username
   };  
   res.render("urls_new", templateVars);
 });
+
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = (req.cookies) ? req.cookies["username"] : "";
+  let username = req.cookies["username"];
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -68,9 +73,10 @@ app.get("/urls/:shortURL", (req, res) => {
     res.render("urls_show", templateVars);
   }
 });
+
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = (req.cookies) ? req.cookies["username"] : "";
+  let username = req.cookies["username"];
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -81,22 +87,22 @@ app.get("/u/:shortURL", (req, res) => {
     res.redirect(getValidURLFormat(longURL));
   }
 });
+
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
+
 app.post("/login", (req, res) => {
-  //console.log("body", req.body.username);
   res.cookie("username", req.body.username);
   res.redirect("/urls");
 });
+
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = getValidURLFormat(req.body.longURL);
   res.redirect(`/urls/${shortURL}`);
 });
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
+
 app.post("/urls/:id/:action", (req, res) => {
   const id = req.params.id;
   const formAction = req.params.action;
@@ -111,4 +117,8 @@ app.post("/urls/:id/:action", (req, res) => {
       break;
   }
   res.redirect("/urls");
+});
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
