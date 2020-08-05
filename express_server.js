@@ -38,18 +38,48 @@ const users = {
     id: "User22",
     email: "dave22@rogers.com",
     password: "004QAD"
-  }
+  },
 };
 
-
-const addUser = (email, password) => {
-  const id = generateRandomString();
-  users[id] = {
-    id,
-    email,
-    password
-  };
-  return id;
+const userDatabase = {
+  users: {
+    "Uer22": {
+      id: "User22",
+      email: "dave22@rogers.com",
+      password: "004QAD"
+    }
+  },
+  addUser: (email, password) => {
+    const id = generateRandomString();
+    users[id] = {
+      id,
+      email,
+      password
+    };
+    return id;
+  },
+  emailAvailable: (email) => {
+    for (const key in users) {
+      if (users[key].email === email) {
+        return false;
+      }
+    }
+    return true;
+  },
+  getUserEmail: (user_id) => {
+    if (!users[user_id]) {
+      return '';
+    }
+    return users[user_id].email;
+  },
+  getUserId: (username) => {
+    for (const key in users) {
+      if (users[key].email === username) {
+        return key;
+      }
+    }
+    return '';
+  }
 };
 
 app.get("/", (req, res) => {
@@ -64,7 +94,7 @@ app.get("/register", (req, res) => {
   res.render("user_register", templateVars);
 });
 app.get("/urls", (req, res) => {
-  let username = users[req.cookies.user_id].email;
+  let username = userDatabase.getUserEmail(req.cookies.user_id);
   let templateVars = {
     urls:urlDatabase,
     username
@@ -73,7 +103,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let username = users[req.cookies.user_id].email;
+  let username = userDatabase.getUserEmail(req.cookies.user_id);
   let templateVars = {
     username
   };  
@@ -82,7 +112,7 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = users[req.cookies.user_id].email;
+  let username = userDatabase.getUserEmail(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -101,7 +131,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = users[req.cookies.user_id].email;
+  let username = userDatabase.getUserEmail(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
@@ -125,20 +155,28 @@ app.post("/register", (req, res) => {
       username:'',
       bad_register: "Email and password are required."
     };
-    res.render("user_register", templateVars);    
+    res.statusCode = 400;
+    res.render("user_register", templateVars);
+  } else if (!userDatabase.emailAvailable(email)) {
+    let templateVars = {
+      username:'',
+      bad_register: "Email address already in use"
+    };
+    res.statusCode = 400;
+    res.render("user_register", templateVars);
   } else {
-    const user_id = addUser(email, password);
+    const user_id = userDatabase.addUser(email.trim(), password);
     res.cookie("user_id", user_id);
     res.redirect("/urls")
   }
 });
 
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username);
+  res.cookie("user_id", userDatabase.getUserId(req.body.username));
   res.redirect("/urls");
 });
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
