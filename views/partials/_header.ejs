@@ -12,13 +12,25 @@
     </div>
     <!-- User Logon section-->
     <div class="collapse navbar-collapse" style="position:absolute;right:0;padding-right:40px;">
+      <% if (username) { %>
+        <div class="navbar-nav">
+          <form method="POST" action="/logout/<%= username %>">
+            <div>
+              <span style="font-size:20px;""><%= username %></span>
+              <button type="submit" style="font-size:20px;color:#fff;background-color:inherit;width:100px;border:1px solid #000;border-radius:5px;height:40px;">Login</button>
+            </div>
+          </form>
+        </div>      
+      <% } else { %>
       <div class="navbar-nav">
         <form method="POST" action="/login">
           <div>
             <input type="text" name="username" placeholder="Username" style="font-size:20px;width:300px;padding-right:20px;border:1px solid #000;border-radius:5px;height:40px;"> 
-            <button type="submit" style="font-size:20px;color:#fff;background-color:inherit;width:100px;border:1px solid #000;border-radius:5px;height:40px;">Login</button></div>
+            <button type="submit" style="font-size:20px;color:#fff;background-color:inherit;width:100px;border:1px solid #000;border-radius:5px;height:40px;">Login</button>
+          </div>
         </form>
       </div>
+      <% } %>
     </div>    
     <!-- End of User Logon section -->
   </nav>

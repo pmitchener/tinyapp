@@ -36,25 +36,47 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = {urls:urlDatabase};
+  let username = (req.cookies) ? req.cookies["username"] : "";
+  let templateVars = {
+    urls:urlDatabase,
+    username
+  };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let username = (req.cookies) ? req.cookies["username"] : "";
+  let templateVars = {
+    username
+  };  
+  res.render("urls_new", templateVars);
 });
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
+  let username = (req.cookies) ? req.cookies["username"] : "";
   if (!longURL) {
-    res.render("urlNotFound", {url:req.params.shortURL});
+    let templateVars = {
+      url:req.params.shortURL,
+      username
+    };
+    res.render("urlNotFound", templateVars);
   } else {  
-    let templateVars = {longURL:longURL, shortURL:req.params.shortURL};
+    let templateVars = {
+      longURL:longURL, 
+      shortURL:req.params.shortURL,
+      username
+    };
     res.render("urls_show", templateVars);
   }
 });
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
+  let username = (req.cookies) ? req.cookies["username"] : "";
   if (!longURL) {
-    res.render("urlNotFound", {url:req.params.shortURL});
+    let templateVars = {
+      url:req.params.shortURL,
+      username
+    };
+    res.render("urlNotFound", templateVars);
   } else {   
     res.redirect(getValidURLFormat(longURL));
   }
