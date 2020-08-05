@@ -38,6 +38,10 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/register", (req, res) => {
+  let templateVars = {username:''};//username will be undefined.
+  res.render("user_login", templateVars);
+});
 app.get("/urls", (req, res) => {
   let username = req.cookies["username"];
   let templateVars = {
