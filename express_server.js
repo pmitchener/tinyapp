@@ -62,7 +62,11 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
-
+app.post("/login", (req, res) => {
+  //console.log("body", req.body.username);
+  res.cookie("username", req.body.username);
+  res.redirect("/urls");
+});
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = getValidURLFormat(req.body.longURL);
