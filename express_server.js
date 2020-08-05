@@ -39,8 +39,8 @@ app.get("/", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let templateVars = {username:''};//username will be undefined.
-  res.render("user_login", templateVars);
+  let templateVars = {username:''};
+  res.render("user_register", templateVars);
 });
 app.get("/urls", (req, res) => {
   let username = req.cookies["username"];
