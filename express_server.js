@@ -86,6 +86,14 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/login", (req, res) => {
+  let templateVars = {
+    username:'', 
+    bad_login:''
+  };
+  res.render("user_login", templateVars);  
+});
+
 app.get("/register", (req, res) => {
   let templateVars = {
     username:'', 
