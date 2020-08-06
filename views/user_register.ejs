@@ -43,8 +43,8 @@
               <td style="width:120px;">&nbsp;</td>
               <td>
                 <button type="submit" class="btn btn-primary" style="width: 300px; margin: 1em">Register</button>
-                <% if (bad_register) { %>
-                  <div style="width: 300px; margin: 1em;color:red"><p><%= bad_register %></p></div>
+                <% if (usrRegisterError) { %>
+                  <div style="width: 300px; margin: 1em;color:red"><p><%= usrRegisterError %></p></div>
                 <% } %>                
               </td>
             </tr>

@@ -16,10 +16,10 @@ const urlsForUser = (id) => {
   return urlDb;
 };
 //this method validate whether the current user created the url they are attempting to modify.
-const isOwnerOfUrl = (user_Id, url_Id) => {
+const isOwnerOfUrl = (userId, urlId) => {
   for (const key in urlDatabase) {
-    if (key === url_Id) {
-      return urlDatabase[key].userID === user_Id;
+    if (key === urlId) {
+      return urlDatabase[key].userID === userId;
     }
   }
   return false;
