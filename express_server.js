@@ -2,9 +2,11 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcrypt");
-const userDB = require("./userDatabaseHandler");
-const urlsDB = require("./urlsDatabaseHandler");
+const userDB = require("./userDatabaseModule");
+const urlsDB = require("./urlsDatabaseModule");
 const utils = require("./tinyAppUtils");
+const usersModule = require("./usersModule");
+const users = require("./usersModule");
 
 const app = express();
 app.use(cookieSession({
@@ -19,18 +21,6 @@ app.set("view engine", "ejs");
 utils.setHasher(bcrypt);
 const urlDatabase = urlsDB.urlDatabase;
 let userDatabase = new userDB.tinyDatabase();//instantiate a user database.
-
-//this function will validate a user before allowing logon to the app.
-const authenticateUser = (email, password) => {
-  const userObj = userDatabase.getUser(email);
-  if (!userObj) {
-    return '';
-  }
-  if (!utils.validateHashedPassword(password, userObj.password)) {
-    return '';
-  }
-  return userObj.id;
-};
 
 //get index page. same as GET /urls below for now.
 app.get("/", (req, res) => {
@@ -57,7 +47,7 @@ app.get("/register", (req, res) => {
 
 //show all your current urls. This will redirect to logon if user is not logged in.
 app.get("/urls", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!email) {
     res.redirect("/login");
     return;
@@ -71,7 +61,7 @@ app.get("/urls", (req, res) => {
 
 //show urls_new page to allow user to add a new short url. This will redirect to logon if user is not logged in.
 app.get("/urls/new", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!email) {
     res.redirect("/login");
     return;
@@ -84,7 +74,7 @@ app.get("/urls/new", (req, res) => {
 
 //Get the long url for a specific short url for the logged on user. This will redirect to logon if user is not logged in.
 app.get("/urls/:id", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!email) {
     res.redirect("/login");
     return;
@@ -109,7 +99,7 @@ app.get("/urls/:id", (req, res) => {
 //Redirecting to the long url based on the supplied short url.
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id].longURL;
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!longURL) {
     let templateVars = {
       url:req.params.id,
@@ -132,7 +122,7 @@ app.post("/register", (req, res) => {
     };
     res.statusCode = 400;
     res.render("user_register", templateVars);
-  } else if (!userDatabase.emailAvailable(email)) {
+  } else if (!users.emailAvailable(email, userDatabase)) {
     let templateVars = {
       email:'',
       bad_register: "Email address already in use"
@@ -140,7 +130,7 @@ app.post("/register", (req, res) => {
     res.statusCode = 400;
     res.render("user_register", templateVars);
   } else {
-    const user_Id = userDatabase.addUser(email.trim(), utils.hashPassword(password));
+    const user_Id = users.addUser(email.trim(), utils.hashPassword(password), userDatabase);
     req.session.user_Id = user_Id;
     res.redirect("/urls");
   }
@@ -148,7 +138,7 @@ app.post("/register", (req, res) => {
 
 //Validate and logon a user.
 app.post("/login", (req, res) => {
-  const user_Id = authenticateUser(req.body.email, req.body.password);
+  const user_Id = users.authenticateUser(req.body.email, req.body.password, userDatabase);
   if (!user_Id) {
     let templateVars = {
       email:'',
@@ -171,7 +161,7 @@ app.post("/logout", (req, res) => {
 
 //Add a new short url to the url database. This will redirect to logon if user is not logged in.
 app.post("/urls", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!email) {
     res.redirect("/login");
     return;
@@ -188,13 +178,13 @@ app.post("/urls", (req, res) => {
 //This will redirect to logon if user is not logged in.
 //Will not allow user to modify/delete urls that they did not create.
 app.post("/urls/:id/:action", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.session.user_Id);
+  let email = users.getUserEmailById(req.session.user_Id, userDatabase);
   if (!email) {
     res.redirect("/login");
     return;
   }
   const url_Id = req.params.id;
-  if (!isOwnerOfUrl(req.session.user_Id, url_Id)) {
+  if (!urlsDB.isOwnerOfUrl(req.session.user_Id, url_Id)) {
     res.redirect("/urls");
     return;
   }
