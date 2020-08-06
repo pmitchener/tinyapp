@@ -1,10 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const bcrypt = require("bcrypt");
 
 const app = express();
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'tinyappSession',
+  keys: ['Parick', 'Lighthouselabs']
+}));
 const PORT = 8080; // default port 8080
 
 app.use(bodyParser.urlencoded({extended:true}));
@@ -12,6 +15,7 @@ app.set("view engine", "ejs");
 
 const saltRounds = 10;
 
+//generate a random alpha numeric id.
 const generateRandomString = () => {
   return Math.random().toString(36).substring(2, 8);
 };
@@ -32,9 +36,13 @@ const getValidURLFormat = (url) => {
   }
   return url;
 };
+//Create hash of new user password
+//TODO: try out the async version of the bcrypt hashing method
 const hashPassword = (password) => {
   return bcrypt.hashSync(password, saltRounds);
 };
+//validate user password for logon to the app.
+//TODO: try out the async version of the bcrypt compare function.
 const validateHashedPassword = (password, hshpassword) => {
   return bcrypt.compareSync(password, hshpassword);
 };
@@ -45,6 +53,8 @@ const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
+
+//This method returns all the urls that belong to a particular usr id
 const urlsForUser = (id) => {
   const urlDb = {};
   for (const key in urlDatabase) {
@@ -54,6 +64,7 @@ const urlsForUser = (id) => {
   }
   return urlDb;
 };
+//this method validate whether the current user created the url they are attempting to modify.
 const isOwnerOfUrl = (user_Id, url_Id) => {
   for (const key in urlDatabase) {
     if (key === url_Id) {
@@ -62,6 +73,8 @@ const isOwnerOfUrl = (user_Id, url_Id) => {
   }
   return false;
 };
+//this class holds the user database structure for the app.
+//I added some helper methods that are specific to operations that would be performed on the users database.
 class tinyDatabase {
   constructor() {
     this.users = {
@@ -72,8 +85,9 @@ class tinyDatabase {
       }
     };
   }
+  //add a user to the database. the password parameter is hashed prior to this call.
   addUser(email, password) {
-    const id = generateRandomString();
+    const id = generateRandomString();//create random id for new user.
     this.users[id] = {
       id,
       email,
@@ -81,6 +95,7 @@ class tinyDatabase {
     };
     return id;
   }
+  //Check to see if the new email is available to use before allowing user to register with that email.
   emailAvailable(email) {
     for (const key in this.users) {
       if (this.users[key].email === email) {
@@ -89,12 +104,14 @@ class tinyDatabase {
     }
     return true;
   }
+  //search for email address based on a given user id
   getUserEmailById(user_Id) {
     if (!this.users[user_Id]) {
       return '';
     }
     return this.users[user_Id].email;
   }
+  //search for user id based on a given email address
   getUserIdByEmail(email) {
     for (const key in this.users) {
       if (this.users[key].email === email) {
@@ -103,6 +120,8 @@ class tinyDatabase {
     }
     return '';
   }
+  //return a user object based ona given email address. if nothing is found return null to the caller.
+  //caller should handle nulls.
   getUser(email) {
     for (const key in this.users) {
       if (this.users[key].email === email) {
@@ -112,23 +131,26 @@ class tinyDatabase {
     return null;
   }
 }
-let userDatabase = new tinyDatabase();
+let userDatabase = new tinyDatabase();//instantiate a user database.
+
+//this function will validate a user before allowing logon to the app.
 const authenticateUser = (email, password) => {
   const userObj = userDatabase.getUser(email);
   if (!userObj) {
     return '';
   }
-  //if (userObj.password !== password) {
   if (!validateHashedPassword(password, userObj.password)) {
     return '';
   }
   return userObj.id;
 };
 
+//get index page. same as GET /urls below for now.
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
 
+//show login page
 app.get("/login", (req, res) => {
   let templateVars = {
     email:'',
@@ -137,6 +159,7 @@ app.get("/login", (req, res) => {
   res.render("user_login", templateVars);
 });
 
+//show register page
 app.get("/register", (req, res) => {
   let templateVars = {
     email:'',
@@ -144,21 +167,24 @@ app.get("/register", (req, res) => {
   };
   res.render("user_register", templateVars);
 });
+
+//show all your current urls. This will redirect to logon if user is not logged in.
 app.get("/urls", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!email) {
     res.redirect("/login");
     return;
   }
   let templateVars = {
-    urls:urlsForUser(req.cookies.user_Id),
+    urls:urlsForUser(req.session.user_Id),
     email
   };
   res.render("urls_index", templateVars);
 });
 
+//show urls_new page to allow user to add a new short url. This will redirect to logon if user is not logged in.
 app.get("/urls/new", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!email) {
     res.redirect("/login");
     return;
@@ -169,8 +195,9 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+//Get the long url for a specific short url for the logged on user. This will redirect to logon if user is not logged in.
 app.get("/urls/:id", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!email) {
     res.redirect("/login");
     return;
@@ -192,9 +219,10 @@ app.get("/urls/:id", (req, res) => {
   }
 });
 
+//Redirecting to the long url based on the supplied short url.
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id].longURL;
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!longURL) {
     let templateVars = {
       url:req.params.id,
@@ -206,10 +234,11 @@ app.get("/u/:id", (req, res) => {
   }
 });
 
-app.get("/hello", (req, res) => {
+/* app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+}); */
 
+//register a new user
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -229,11 +258,12 @@ app.post("/register", (req, res) => {
     res.render("user_register", templateVars);
   } else {
     const user_Id = userDatabase.addUser(email.trim(), hashPassword(password));
-    res.cookie("user_Id", user_Id);
+    req.session.user_Id = user_Id;
     res.redirect("/urls");
   }
 });
 
+//Validate and logon a user.
 app.post("/login", (req, res) => {
   const user_Id = authenticateUser(req.body.email, req.body.password);
   if (!user_Id) {
@@ -244,17 +274,21 @@ app.post("/login", (req, res) => {
     res.statusCode = 403;
     res.render("user_login", templateVars);
   } else {
-    res.cookie("user_Id", user_Id);
+    req.session.user_Id = user_Id;
     res.redirect("/urls");
   }
 });
+
+//logout a user and delete their session.
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_Id");
+  //res.clearCookie("user_Id");
+  req.session.user_Id = null;
   res.redirect("/urls");
 });
 
+//Add a new short url to the url database. This will redirect to logon if user is not logged in.
 app.post("/urls", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!email) {
     res.redirect("/login");
     return;
@@ -262,19 +296,22 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     longURL: getValidURLFormat(req.body.longURL),
-    userID: req.cookies.user_Id
+    userID: req.session.user_Id
   };
   res.redirect(`/urls`);
 });
 
+//Modiify or delete a short url based on the action parameter.
+//This will redirect to logon if user is not logged in.
+//Will not allow user to modify/delete urls that they did not create.
 app.post("/urls/:id/:action", (req, res) => {
-  let email = userDatabase.getUserEmailById(req.cookies.user_Id);
+  let email = userDatabase.getUserEmailById(req.session.user_Id);
   if (!email) {
     res.redirect("/login");
     return;
   }
   const url_Id = req.params.id;
-  if (!isOwnerOfUrl(req.cookies.user_Id, url_Id)) {
+  if (!isOwnerOfUrl(req.session.user_Id, url_Id)) {
     res.redirect("/urls");
     return;
   }
@@ -286,7 +323,7 @@ app.post("/urls/:id/:action", (req, res) => {
   case "update":
     urlDatabase[url_Id] = {
       longURL: getValidURLFormat(req.body.longURL),
-      userID: req.cookies.user_Id
+      userID: req.session.user_Id
     };
     break;
   default:
@@ -295,6 +332,7 @@ app.post("/urls/:id/:action", (req, res) => {
   res.redirect("/urls");
 });
 
+//Start the tiny app server.
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
