@@ -78,6 +78,14 @@ app.get("/urls/:id", (req, res) => {
     res.redirect("/login");
     return;
   }
+  const urlId = req.params.id;
+  if (!urlsDB.isOwnerOfUrl(req.session.userId, urlId)) {
+    let templateVars = {
+      email
+    };
+    res.redirect("/cannotModifyUrl"), templateVars;
+    return;
+  }
   const longURL = urlDatabase[req.params.id].longURL;
   if (!longURL) {
     let templateVars = {
