@@ -35,14 +35,30 @@ const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }  
 };
-
+const urlsForUser = (id) => {
+  const urlDb = {};
+  for (const key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      urlDb[key] = {longURL: urlDatabase[key].longURL};
+    }
+  }
+  return urlDb;
+};
+const isOwnerOfUrl = (user_id, url_id) => {
+  for (const key in urlDatabase) {
+    if (key === url_id) {
+      return urlDatabase[key].userID === user_id;
+    }
+  }
+  return false;
+};
 class tinyDatabase {
   constructor() {
     this.users = {
       "User22": {
         id: "User22",
         email: "dave22@rogers.com",
-        password: "004QAD"
+        password: "test"
       }
     }
   }
@@ -118,9 +134,12 @@ app.get("/register", (req, res) => {
 });
 app.get("/urls", (req, res) => {
   let email = userDatabase.getUserEmailById(req.cookies.user_id);
-  console.log("req.cookies.user_id", req.cookies.user_id, "email", email);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }  
   let templateVars = {
-    urls:urlDatabase,
+    urls:urlsForUser(req.cookies.user_id),
     email
   };
   res.render("urls_index", templateVars);
@@ -239,14 +258,18 @@ app.post("/urls/:id/:action", (req, res) => {
     res.redirect("/login");
     return;
   }  
-  const id = req.params.id;
+  const url_id = req.params.id;
+  if (!isOwnerOfUrl(req.cookies.user_id, url_id)) {
+    res.redirect("/urls");
+    return;
+  }
   const formAction = req.params.action;
   switch(formAction) {
     case "delete":
-      delete urlDatabase[id];
+      delete urlDatabase[url_id];
       break;
     case "update":
-      urlDatabase[id] = {
+      urlDatabase[url_id] = {
         longURL: getValidURLFormat(req.body.longURL),
         userID: req.cookies.user_id
       }      
