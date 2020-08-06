@@ -33,63 +33,58 @@ const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
-const users = {
-  "Uer22": {
-    id: "User22",
-    email: "dave22@rogers.com",
-    password: "004QAD"
-  },
-};
 
-const userDatabase = {
-  users: {
-    "Uer22": {
-      id: "User22",
-      email: "dave22@rogers.com",
-      password: "004QAD"
+class tinyDatabase {
+  constructor() {
+    this.users = {
+      "User22": {
+        id: "User22",
+        email: "dave22@rogers.com",
+        password: "004QAD"
+      }
     }
-  },
-  addUser: (email, password) => {
+  }
+  addUser (email, password) {
     const id = generateRandomString();
-    users[id] = {
+    this.users[id] = {
       id,
       email,
       password
     };
     return id;
-  },
-  emailAvailable: (email) => {
-    for (const key in users) {
-      if (users[key].email === email) {
+  }
+  emailAvailable (email) {
+    for (const key in this.users) {
+      if (this.users[key].email === email) {
         return false;
       }
     }
     return true;
-  },
-  getUserEmail: (user_id) => {
-    if (!users[user_id]) {
+  }
+  getUserEmailById (user_id) {
+    if (!this.users[user_id]) {
       return '';
     }
-    return users[user_id].email;
-  },
-  getUserId: (username) => {
-    for (const key in users) {
-      if (users[key].email === username) {
+    return this.users[user_id].email;
+  }
+  getUserIdByEmail (email) {
+    for (const key in this.users) {
+      if (this.users[key].email === email) {
         return key;
       }
     }
     return '';
-  },
-  getUser: (email) => {
-    for (const key in users) {
-      if (users[key].email === username) {
-        return users[key];
+  }
+  getUser (email) {
+    for (const key in this.users) {
+      if (this.users[key].email === email) {
+        return this.users[key];
       }
     }
     return null;
-  },
-  authenticateUser: (email, password) => {
-    const userObj = getUser(email);
+  }
+  authenticateUser (email, password)  {
+    const userObj = this.getUser(email);
     if (!userObj) {
       return '';
     }
@@ -98,15 +93,15 @@ const userDatabase = {
     }
     return userObj.id;
   } 
-};
-
+}
+let userDatabase = new tinyDatabase();
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
 app.get("/login", (req, res) => {
   let templateVars = {
-    username:'', 
+    email:'', 
     bad_login:''
   };
   res.render("user_login", templateVars);  
@@ -114,42 +109,43 @@ app.get("/login", (req, res) => {
 
 app.get("/register", (req, res) => {
   let templateVars = {
-    username:'', 
+    email:'', 
     bad_register:''
   };
   res.render("user_register", templateVars);
 });
 app.get("/urls", (req, res) => {
-  let username = userDatabase.getUserEmail(req.cookies.user_id);
+  let email = userDatabase.getUserEmailById(req.cookies.user_id);
+  console.log("req.cookies.user_id", req.cookies.user_id, "email", email);
   let templateVars = {
     urls:urlDatabase,
-    username
+    email
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let username = userDatabase.getUserEmail(req.cookies.user_id);
+  let email = userDatabase.getUserEmailById(req.cookies.user_id);
   let templateVars = {
-    username
+    email
   };  
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = userDatabase.getUserEmail(req.cookies.user_id);
+  let email = userDatabase.getUserEmailById(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
-      username
+      email
     };
     res.render("urlNotFound", templateVars);
   } else {  
     let templateVars = {
       longURL:longURL, 
       shortURL:req.params.shortURL,
-      username
+      email
     };
     res.render("urls_show", templateVars);
   }
@@ -157,11 +153,11 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  let username = userDatabase.getUserEmail(req.cookies.user_id);
+  let email = userDatabase.getUserEmailById(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
       url:req.params.shortURL,
-      username
+      email
     };
     res.render("urlNotFound", templateVars);
   } else {   
@@ -178,14 +174,14 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
   if (!email || !password) {
     let templateVars = {
-      username:'',
+      email:'',
       bad_register: "Email and password are required."
     };
     res.statusCode = 400;
     res.render("user_register", templateVars);
   } else if (!userDatabase.emailAvailable(email)) {
     let templateVars = {
-      username:'',
+      email:'',
       bad_register: "Email address already in use"
     };
     res.statusCode = 400;
@@ -199,12 +195,13 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
   const user_id = userDatabase.authenticateUser(req.body.email, req.body.password);
-  if (user_id) {
+  console.log("user_id", user_id);
+  if (!user_id) {
     let templateVars = {
-      username:'', 
+      email:'', 
       bad_login:'Invalid user id and or password.'
     };
-    res.statusCode = 400;
+    res.statusCode = 403;
     res.render("user_login", templateVars);      
   } else {
     res.cookie("user_id", user_id);
