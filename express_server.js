@@ -2,6 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcrypt");
+const userDB = require("./userDatabaseHandler");
+const urlsDB = require("./urlsDatabaseHandler");
+const utils = require("./tinyAppUtils");
 
 const app = express();
 app.use(cookieSession({
@@ -13,125 +16,9 @@ const PORT = 8080; // default port 8080
 app.use(bodyParser.urlencoded({extended:true}));
 app.set("view engine", "ejs");
 
-const saltRounds = 10;
-
-//generate a random alpha numeric id.
-const generateRandomString = () => {
-  return Math.random().toString(36).substring(2, 8);
-};
-/*
-  This function will make sure that any long url being posted or redirected to is actually a valid url format.
-  //if the string does not start with http, the function will assume mal format and pre-pend http:// to the string
-  i.e www.msn.com will be changed to http://www.msn.com
-  https://yoursecure.com will not be changed.
-*/
-const getValidURLFormat = (url) => {
-  //If url is undefined or empty string, just return the url. This should not happen.
-  //The calling method should have already check for this.
-  if (!url) {
-    url;
-  }
-  if (!url.toLowerCase().startsWith("http")) {
-    return `http://${url}`;
-  }
-  return url;
-};
-//Create hash of new user password
-//TODO: try out the async version of the bcrypt hashing method
-const hashPassword = (password) => {
-  return bcrypt.hashSync(password, saltRounds);
-};
-//validate user password for logon to the app.
-//TODO: try out the async version of the bcrypt compare function.
-const validateHashedPassword = (password, hshpassword) => {
-  return bcrypt.compareSync(password, hshpassword);
-};
-
-const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "User22"},
-  "9sm5xK": { longURL: "http://www.google.com", userID: "User22"},
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-};
-
-//This method returns all the urls that belong to a particular usr id
-const urlsForUser = (id) => {
-  const urlDb = {};
-  for (const key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      urlDb[key] = {longURL: urlDatabase[key].longURL};
-    }
-  }
-  return urlDb;
-};
-//this method validate whether the current user created the url they are attempting to modify.
-const isOwnerOfUrl = (user_Id, url_Id) => {
-  for (const key in urlDatabase) {
-    if (key === url_Id) {
-      return urlDatabase[key].userID === user_Id;
-    }
-  }
-  return false;
-};
-//this class holds the user database structure for the app.
-//I added some helper methods that are specific to operations that would be performed on the users database.
-class tinyDatabase {
-  constructor() {
-    this.users = {
-      "User22": {
-        id: "User22",
-        email: "dave22@rogers.com",
-        password: hashPassword("test")
-      }
-    };
-  }
-  //add a user to the database. the password parameter is hashed prior to this call.
-  addUser(email, password) {
-    const id = generateRandomString();//create random id for new user.
-    this.users[id] = {
-      id,
-      email,
-      password
-    };
-    return id;
-  }
-  //Check to see if the new email is available to use before allowing user to register with that email.
-  emailAvailable(email) {
-    for (const key in this.users) {
-      if (this.users[key].email === email) {
-        return false;
-      }
-    }
-    return true;
-  }
-  //search for email address based on a given user id
-  getUserEmailById(user_Id) {
-    if (!this.users[user_Id]) {
-      return '';
-    }
-    return this.users[user_Id].email;
-  }
-  //search for user id based on a given email address
-  getUserIdByEmail(email) {
-    for (const key in this.users) {
-      if (this.users[key].email === email) {
-        return key;
-      }
-    }
-    return '';
-  }
-  //return a user object based ona given email address. if nothing is found return null to the caller.
-  //caller should handle nulls.
-  getUser(email) {
-    for (const key in this.users) {
-      if (this.users[key].email === email) {
-        return this.users[key];
-      }
-    }
-    return null;
-  }
-}
-let userDatabase = new tinyDatabase();//instantiate a user database.
+utils.setHasher(bcrypt);
+const urlDatabase = urlsDB.urlDatabase;
+let userDatabase = new userDB.tinyDatabase();//instantiate a user database.
 
 //this function will validate a user before allowing logon to the app.
 const authenticateUser = (email, password) => {
@@ -139,7 +26,7 @@ const authenticateUser = (email, password) => {
   if (!userObj) {
     return '';
   }
-  if (!validateHashedPassword(password, userObj.password)) {
+  if (!utils.validateHashedPassword(password, userObj.password)) {
     return '';
   }
   return userObj.id;
@@ -176,7 +63,7 @@ app.get("/urls", (req, res) => {
     return;
   }
   let templateVars = {
-    urls:urlsForUser(req.session.user_Id),
+    urls:urlsDB.urlsForUser(req.session.user_Id),
     email
   };
   res.render("urls_index", templateVars);
@@ -230,13 +117,9 @@ app.get("/u/:id", (req, res) => {
     };
     res.render("urlNotFound", templateVars);
   } else {
-    res.redirect(getValidURLFormat(longURL));
+    res.redirect(utils.getValidURLFormat(longURL));
   }
 });
-
-/* app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-}); */
 
 //register a new user
 app.post("/register", (req, res) => {
@@ -257,7 +140,7 @@ app.post("/register", (req, res) => {
     res.statusCode = 400;
     res.render("user_register", templateVars);
   } else {
-    const user_Id = userDatabase.addUser(email.trim(), hashPassword(password));
+    const user_Id = userDatabase.addUser(email.trim(), utils.hashPassword(password));
     req.session.user_Id = user_Id;
     res.redirect("/urls");
   }
@@ -293,9 +176,9 @@ app.post("/urls", (req, res) => {
     res.redirect("/login");
     return;
   }
-  const shortURL = generateRandomString();
+  const shortURL = utils.generateRandomString();
   urlDatabase[shortURL] = {
-    longURL: getValidURLFormat(req.body.longURL),
+    longURL: utils.getValidURLFormat(req.body.longURL),
     userID: req.session.user_Id
   };
   res.redirect(`/urls`);
@@ -322,7 +205,7 @@ app.post("/urls/:id/:action", (req, res) => {
     break;
   case "update":
     urlDatabase[url_Id] = {
-      longURL: getValidURLFormat(req.body.longURL),
+      longURL: utils.getValidURLFormat(req.body.longURL),
       userID: req.session.user_Id
     };
     break;
