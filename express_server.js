@@ -30,8 +30,10 @@ app.use(bodyParser.urlencoded({extended:true}));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "User22"},
+  "9sm5xK": { longURL: "http://www.google.com", userID: "User22"},
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }  
 };
 
 class tinyDatabase {
@@ -126,37 +128,46 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   let email = userDatabase.getUserEmailById(req.cookies.user_id);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }
   let templateVars = {
     email
   };  
   res.render("urls_new", templateVars);
 });
 
-app.get("/urls/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+app.get("/urls/:id", (req, res) => {
   let email = userDatabase.getUserEmailById(req.cookies.user_id);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }    
+  const longURL = urlDatabase[req.params.id].longURL;
+  //let email = userDatabase.getUserEmailById(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
-      url:req.params.shortURL,
+      url:req.params.id,
       email
     };
     res.render("urlNotFound", templateVars);
   } else {  
     let templateVars = {
       longURL:longURL, 
-      shortURL:req.params.shortURL,
+      shortURL:req.params.id,
       email
     };
     res.render("urls_show", templateVars);
   }
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id].longURL;
   let email = userDatabase.getUserEmailById(req.cookies.user_id);
   if (!longURL) {
     let templateVars = {
-      url:req.params.shortURL,
+      url:req.params.id,
       email
     };
     res.render("urlNotFound", templateVars);
@@ -215,11 +226,19 @@ app.post("/logout", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = getValidURLFormat(req.body.longURL);
+  urlDatabase[shortURL] = {
+    longURL: getValidURLFormat(req.body.longURL),
+    userID: req.cookies.user_id
+  }
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.post("/urls/:id/:action", (req, res) => {
+  let email = userDatabase.getUserEmailById(req.cookies.user_id);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }  
   const id = req.params.id;
   const formAction = req.params.action;
   switch(formAction) {
@@ -227,7 +246,10 @@ app.post("/urls/:id/:action", (req, res) => {
       delete urlDatabase[id];
       break;
     case "update":
-      urlDatabase[id] = getValidURLFormat(req.body.longURL);
+      urlDatabase[id] = {
+        longURL: getValidURLFormat(req.body.longURL),
+        userID: req.cookies.user_id
+      }      
       break;
     default:
       break;
