@@ -37,6 +37,12 @@ app.get("/login", (req, res) => {
 
 //show register page
 app.get("/register", (req, res) => {
+  let email = users.getUserEmailById(req.session.userId, userDatabase);
+  //if user is already logged in. redirect to the /urls route.
+  if (email) {
+    res.redirect("/urls");
+    return;
+  }  
   let templateVars = {
     email:'',
     usrRegisterError:''
