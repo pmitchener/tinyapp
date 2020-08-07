@@ -36,10 +36,44 @@ const validateHashedPassword = (password, hshpassword) => {
   return _hsher.compareSync(password, hshpassword);
 };
 
+//get current time stamp.
+const getCurrentTimeStamp = () =>{
+  return Date.now();
+}
+
+//format date from time stamp. format: MMM dd, YYYY
+const getDisplayDateFromTimeStamp = (timeStmp) => {
+  const dtFormatter = new Intl.DateTimeFormat('en', {year: "numeric", weekday: "short", month: "short", day: "2-digit"});
+  const formatterResults = dtFormatter.formatToParts(timeStmp);
+  const dtValues = {};
+  formatterResults.forEach(({type, value}) => {
+    switch (type) {
+      case 'weekday':
+        dtValues['weekday'] = value;
+        break;
+      case 'month':
+        dtValues['month'] = value;
+        break;
+      case 'day':
+        dtValues['day'] = value;
+        break;
+      case 'year':
+        dtValues['year'] = value;
+        break;
+      default:
+        break;
+    }
+  });
+  
+  return `${dtValues.month} ${dtValues.day}, ${dtValues.year}`;  
+}
+
 module.exports = {
   generateRandomString,
   getValidURLFormat,
   hashPassword,
   validateHashedPassword,
-  setHasher
+  setHasher,
+  getCurrentTimeStamp,
+  getDisplayDateFromTimeStamp
 };

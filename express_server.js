@@ -123,6 +123,8 @@ app.get("/u/:id", (req, res) => {
     };
     res.render("urlNotFound", templateVars);
   } else {
+    urlDatabase[req.params.id].visited++;
+    console.log(urlDatabase[req.params.id]);
     res.redirect(utils.getValidURLFormat(longURL));
   }
 });
@@ -184,7 +186,9 @@ app.post("/urls", (req, res) => {
   const shortURL = utils.generateRandomString();
   urlDatabase[shortURL] = {
     longURL: utils.getValidURLFormat(req.body.longURL),
-    userID: req.session.userId
+    userID: req.session.userId,
+    dateCreated: utils.getCurrentTimeStamp(),
+    visited: 0    
   };
   res.redirect(`/urls`);
 });

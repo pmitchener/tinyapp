@@ -1,8 +1,30 @@
+const utils = require("./tinyAppUtils");
+
 const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "User22"},
-  "9sm5xK": { longURL: "http://www.google.com", userID: "User22"},
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "User22",
+    dateCreated: 1596766556171,
+    visited:1
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "User22",
+    dateCreated: 1596766556171,
+    visited:1
+  },
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW" ,
+    dateCreated: 1596766556171,
+    visited:1
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+    dateCreated: 1596766556171,
+    visited:1
+  }
 };
 
 //This method returns all the urls that belong to a particular usr id
@@ -10,7 +32,12 @@ const urlsForUser = (id) => {
   const urlDb = {};
   for (const key in urlDatabase) {
     if (urlDatabase[key].userID === id) {
-      urlDb[key] = {longURL: urlDatabase[key].longURL};
+      urlDb[key] = 
+      {
+        longURL: urlDatabase[key].longURL,
+        dateCreated: utils.getDisplayDateFromTimeStamp(urlDatabase[key].dateCreated),
+        visited: urlDatabase[key].visited
+      };
     }
   }
   return urlDb;

@@ -17,15 +17,19 @@
         <tr>
           <th scope="col">Short URL</th>
           <th scope="col">Long URL</th>
+          <th scope="col">Date Created</th>
+          <th scope="col"># of visits</th>
           <th scope="col">Edit</th>
-          <td scope="col">Delete</td>
+          <th scope="col">Delete</th>
         </tr>
       </thead>
       <tbody>
         <% for(let url in urls) { %>
           <tr>
             <td><a href="/u/<%= url %>"><%= url %></a></td>
-            <td><a href="<%= urls[url].longURL %>"><%= urls[url].longURL %></a></td>
+            <td><%= urls[url].longURL %></td>
+            <td scope="col"><%= urls[url].dateCreated %></td>
+            <td scope="col"><%= urls[url].visited %></td>            
             <td><div style="font-size:24px;width:100px;border:1px solid lightblue;border-radius:5px;text-align:center;"><a href="/urls/<%= url %>">Edit</a></div></td>
             <td>
               <form method="POST" action="/urls/<%= url %>?_method=DELETE">
