@@ -1,4 +1,5 @@
 const express = require("express");
+const methodOverride = require('method-override');
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcrypt");
@@ -14,6 +15,8 @@ app.use(cookieSession({
 }));
 const PORT = 8080; // default port 8080
 
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'));
 app.use(bodyParser.urlencoded({extended:true}));
 app.set("view engine", "ejs");
 
@@ -189,7 +192,7 @@ app.post("/urls", (req, res) => {
 //Modiify or delete a short url based on the action parameter.
 //This will redirect to logon if user is not logged in.
 //Will not allow user to modify/delete urls that they did not create.
-app.post("/urls/:id/:action", (req, res) => {
+/* app.post("/urls/:id/:action", (req, res) => {
   let email = users.getUserEmailById(req.session.userId, userDatabase);
   if (!email) {
     res.redirect("/login");
@@ -214,6 +217,47 @@ app.post("/urls/:id/:action", (req, res) => {
   default:
     break;
   }
+  res.redirect("/urls");
+}); */
+
+//Modiify a short url.
+//This will redirect to logon if user is not logged in.
+//Will not allow user to modify urls that they did not create.
+app.put("/urls/:id", (req, res) => {
+  console.log("PUT /urls/:id");
+  let email = users.getUserEmailById(req.session.userId, userDatabase);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }
+  const urlId = req.params.id;
+  if (!urlsDB.isOwnerOfUrl(req.session.userId, urlId)) {
+    res.redirect("/urls");
+    return;
+  }
+  urlDatabase[urlId] = {
+    longURL: utils.getValidURLFormat(req.body.longURL),
+    userID: req.session.userId
+  };  
+  res.redirect("/urls");
+});
+
+//Delete a short url.
+//This will redirect to logon if user is not logged in.
+//Will not allow user to delete urls that they did not create.
+app.delete("/urls/:id", (req, res) => {
+  console.log("DELETE /urls/:id")
+  let email = users.getUserEmailById(req.session.userId, userDatabase);
+  if (!email) {
+    res.redirect("/login");
+    return;
+  }
+  const urlId = req.params.id;
+  if (!urlsDB.isOwnerOfUrl(req.session.userId, urlId)) {
+    res.redirect("/urls");
+    return;
+  }
+  delete urlDatabase[urlId];
   res.redirect("/urls");
 });
 
