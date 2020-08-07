@@ -22,7 +22,7 @@ app.set("view engine", "ejs");
 
 utils.setHasher(bcrypt);
 const urlDatabase = urlsDB.urlDatabase;
-let userDatabase = new userDB.tinyDatabase();//instantiate a user database.
+let userDatabase = userDB.tinyDatabase;//instantiate a user database.
 
 //get index page. same as GET /urls below for now.
 app.get("/", (req, res) => {
@@ -124,7 +124,6 @@ app.get("/u/:id", (req, res) => {
     res.render("urlNotFound", templateVars);
   } else {
     urlDatabase[req.params.id].visited++;
-    console.log(urlDatabase[req.params.id]);
     res.redirect(utils.getValidURLFormat(longURL));
   }
 });
